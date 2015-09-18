@@ -1,0 +1,19 @@
+[package]
+name = "lodestone-along"
+version = "0.1.0"
+authors = ["dremonkey <a.deutmeyer@gmail.com>"]
+
+[dependencies.lodestone-bearing]
+path = "../lodestone-bearing"
+
+[dependencies.lodestone-destination]
+path = "../lodestone-destination"
+
+[dependencies.lodestone-distance]
+path = "../lodestone-distance"
+
+[dependencies.lodestone-linestring]
+path = "../lodestone-linestring"
+
+[dependencies.lodestone-point]
+path = "../lodestone-point"
