@@ -1,5 +1,9 @@
-
-// Standard lib packages
+/// The main crate for lodestone-along
+/// 
+/// ## Overview
+/// 
+/// Takes a FeatureLineString and returns a FeaturePoint at a specified distance 
+/// along the line.
 
 // Third party crates
 extern crate lodestone_bearing;
@@ -14,59 +18,65 @@ use lodestone_distance::distance;
 use lodestone_linestring::FeatureLineString;
 use lodestone_point::FeaturePoint;
 
+/// Returns a FeaturePoint at a specified distance along the line.
 pub extern fn along(
     line: &FeatureLineString,
     dist: f64,
     units: &str) -> FeaturePoint {
 
-  let coords = line.coordinates();
+  let (current, prev, delta) = traverse(&line, dist, &units);
 
-  let mut iter = coords.iter().peekable();
-  let mut prev: Option<FeaturePoint> = None;
+  if delta == 0.0 {
+    return current;
+  } else {
+    let brng = bearing(&current, &prev);
+    let interpolated = destination(&current, delta, brng, &units);
+    return interpolated;
+  }
+}
+
+// Method to traverse a line until distance has been reached or exceeded
+// At that point it returns the last two coordinates and the overshoot delta
+fn traverse(
+    line: &FeatureLineString,
+    dist: f64,
+    units: &str) -> (FeaturePoint, FeaturePoint, f64) {
+
+  let mut coords = line.coordinates();
+  let mut current = FeaturePoint::new(coords.remove(0));
+  let mut prev = current.clone();
   let mut traveled = 0.0;
 
-  loop {
-    let coord = iter.next().unwrap().to_vec();
-    let current = FeaturePoint::new(coord);
+  for coord in coords {
+    current = FeaturePoint::new(coord.clone());
+    traveled += distance(&prev, &current, &units);
 
-    // traverse the line until we have exceeded `dist` or hit the end
-    match iter.peek() {
-      Some(next_coord) => {
-        if traveled >= dist {
-          let delta = traveled - dist;
-          if delta == 0.0 {
-            return current;
-          } else {
-            // retrace our steps if we exceeded `dist`
-            match prev {
-              Some(prev) => {
-                let brng = bearing(&current, &prev) - 180.0;
-                let interpolated = destination(&current, delta, brng, &units);
-                return interpolated;
-              },
-              None => return current
-            } 
-          }
-        } else {
-          let next = FeaturePoint::new(next_coord.to_vec());
-          
-          // save previous and calculate `traveled` before continuing
-          prev = Some(current.clone());
-          traveled += distance(&current, &next, &units);
-        }
-      },
-      None => break
+    if traveled >= dist {
+      let delta = traveled - dist;
+      return (current, prev, delta);
+    } else {
+      prev = current.clone();
     }
   }
 
-  // default
-  let coord = coords.last().unwrap().to_vec();
-  FeaturePoint::new(coord)
+  (current, prev, 0.0)
 }
 
 #[cfg(test)]
 mod tests {
+  use lodestone_point::FeaturePoint;
+  use lodestone_linestring::FeatureLineString;
+  use super::traverse;
+
   #[test]
-  fn it_works() {
+  fn test_traverse() {
+    let coords = vec![vec![0.0, 0.0], vec![1.0, 0.0], vec![1.0, 1.0], vec![2.0, 1.0]];
+    let line = FeatureLineString::new(coords);
+    
+    let (current, prev, delta) = traverse(&line, 200.0, "km");
+    
+    assert_eq!(current, FeaturePoint::new(vec![1.0, 1.0]));
+    assert_eq!(prev, FeaturePoint::new(vec![1.0, 0.0]));
+    assert_eq!(delta, 22.638981586547118);
   }
 }
