@@ -22,7 +22,7 @@ use lodestone_linestring::FeatureLineString;
 use lodestone_point::FeaturePoint;
 
 #[test]
-fn test_along_dist_betwee() {  
+fn test_along_dist_between() {  
   let line = get_linestring();
 
   // find a point between coordinates at index 0 and 1
@@ -45,7 +45,7 @@ fn test_along_dist_betwee() {
 fn test_along_dist_exact() {  
   let line = get_linestring();
 
-  // find a point between coordinates at index 0 and 1
+  // test `along` for match with existing vertice
   // ... do prep work
   let coords = line.coordinates();
   let pt1 = FeaturePoint::new(coords[0].clone());
@@ -58,7 +58,6 @@ fn test_along_dist_exact() {
 
   // ... test point calculated by along
   let pt3 = along(&line, distance, "m");
-  println!("{:?} {:?}", expected_point, pt3);
   assert!(expected_point == pt3);
 }
 
