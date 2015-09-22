@@ -35,6 +35,17 @@ pub extern fn along(
   }
 }
 
+pub trait Along {
+  fn along(&self, dist: f64, units: &str) -> FeaturePoint;
+}
+
+impl Along for FeatureLineString {
+  fn along(&self, dist: f64, units: &str) -> FeaturePoint {
+    along(&self, dist, &units)
+  }
+}
+
+
 // Method to traverse a line until distance has been reached or exceeded
 // At that point it returns the last two coordinates and the overshoot delta
 fn traverse(
@@ -64,9 +75,25 @@ fn traverse(
 
 #[cfg(test)]
 mod tests {
+  use lodestone_distance::distance;
   use lodestone_point::FeaturePoint;
   use lodestone_linestring::FeatureLineString;
-  use super::traverse;
+  use super::{along, traverse};
+
+  #[test]
+  fn test_along() {
+    let coords = vec![vec![0.0, 0.0], vec![1.0, 0.0]];
+    let line = FeatureLineString::new(coords);
+    let pt1 = FeaturePoint::new(vec![0.0, 1.0]);
+    let pt2 = FeaturePoint::new(vec![1.0, 1.0]);
+    let half_distance = distance(&pt1, &pt2, "m") / 2.0;
+
+    // expected
+    let expected = FeaturePoint::new(vec![0.4999238, 0.0]);
+    let point = along(&line, half_distance, "m");
+
+    assert_eq!(expected, point);
+  }
 
   #[test]
   fn test_traverse() {
